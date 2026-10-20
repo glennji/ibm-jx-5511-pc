@@ -103,15 +103,23 @@ ODD_BOTTOM = ODD_CZ - 41.3 / 2         # drive body bottom = shelf top
 SHELF_T = 5.0
 LEDGE_TOP = ODD_BOTTOM - SHELF_T
 
-# JX-style power paddle: a red paddle tilting on an axle behind the switch channel.
-#   切 OFF (tilted down) and 入 ON (tilted up) are held by magnets;
-#   START (pushed further up) presses a microswitch and springs back to 入.
-PSW_X = 44.2                           # paddle centre (middle of the JX switch channel)
-PSW_PIVOT = (11.5, 35.0)               # axle (y, z), axis along X
-PSW_OFF, PSW_ON, PSW_START = -25.0, 25.0, 36.0     # paddle angles (deg, + = up)
-PSW_STOPS = (-28.0, 37.0)              # slot ends act as hard stops
-PSW_EARS = ((-12.6, 13.5), (-12.6, 55.0), (14.7, 13.5), (14.7, 55.0))  # rel. to PSW_X, abs z
+# JX power switch built around Axeman's "Big Red Switch (IBM XT style)" lever
+# (printables.com/model/459567, CC BY-NC-SA 4.0), used unmodified: put
+# BRS_Lever.stl in third_party/. The red drum sits in the JX channel and the
+# blade sticks out. 切 OFF (blade down) and 入 ON (blade up) latch on magnets;
+# pushing past 入 is START: it presses a microswitch and springs back.
+LEVER_STL = os.path.join(os.path.dirname(os.path.abspath(__file__)), "third_party", "BRS_Lever.stl")
+PSW_X = 44.2                           # lever centre (middle of the JX switch channel)
+PSW_PIVOT = (18.5, 34.8)               # M4 axle (y, z), axis along X
+PSW_OFF, PSW_ON, PSW_START = -30.0, 30.0, 38.0     # blade angles (deg, + = up)
+PSW_STOPS = (-32.0, 39.0)              # the blade root meets the window edges here
+LEVER_NATIVE_BLADE = 30.0              # blade angle in the STL's own frame
+LEVER_MAG = (10.03, 5.79)              # lever magnet centre in the STL frame (x, z)
+PSW_EARS = ((-20.5, 14.0), (-20.5, 55.0), (20.5, 14.0), (20.5, 55.0))  # rel. to PSW_X, abs z
 LABEL_FONT = "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf"
+LABEL_FONT_EN = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+LABEL_STYLES = ("JP", "EN", "BLANK")   # 入/切, IEC | On / Off O, none (for stickers)
+LABEL_Y = (1.5, 2.1)                   # labels are 0.6 mm flush inlays in the housing face
 
 FAN92 = 82.5      # hole spacing
 FAN80 = 71.5
@@ -181,7 +189,7 @@ def bowtie(cx, cy, along, shrink=0.0, z0=0.0, z1=1.0):
     return extrude_poly(pts, z0, z1)
 
 # ---------------------------------------------------------------- lower shell
-def lower_shell():
+def lower_shell(labels="JP"):
     adds, cuts = [], []
     outer = box(0, 0, 0, W, D, WALL_TOP)
     cavity = box(SIDE_T, FRONT_T, FLOOR_T, W - SIDE_T, D - SIDE_T, WALL_TOP + 10)
@@ -298,9 +306,9 @@ def lower_shell():
 
     body = union([shell] + adds)
     body = diff(body, cuts)
-    return front_relief(body)
+    return front_relief(body, labels)
 
-def front_relief(body):
+def front_relief(body, labels="JP"):
     """JX front, traced from a photo of a JX system unit with its expansion
     unit on top. Recess first, then raised details, then the cuts through."""
     def R(b, d):            # recess box b=(x0,z0,x1,z1) to depth d
@@ -323,10 +331,9 @@ def front_relief(body):
     rec.append(R(BADGE_LO, 1.5))
     rec.append(R(P(95, 503, 212, 652), 1.5))           # power switch housing
     rec.append(R(P(140, 505, 210, 650), 3.0))          # switch channel
-    fine.append(paddle_slot())                         # power paddle slot
-    for ch, (px, py) in (("入", (115, 525)), ("切", (115, 578))):  # raised labels, as on the JX
-        lx, lz = (px - PHOTO_X0) * PX, H_TOTAL - (py - PHOTO_Y0) * PX
-        raise_.append(glyph(ch, lx, lz, 4.6, 1.5, 0.5))
+    fine.append(paddle_slot())                         # window for the BRS lever
+    fine += paddle_wall_magnet_recesses()
+    fine += label_solids(labels)                      # switch labels (inlay recesses)
     fine.append(thru(P(532, 569, 606, 640)))           # IR window -> power LED window
     rec.append(R(P(706, 372, 1507, 650), 2.0))         # drive / cartridge recess
     rec.append(R(DRIVE_B_FRAME, 3.5))
@@ -547,109 +554,152 @@ def dvd_shelf():
         cuts.append(cylz(x, y, zt - 1.7, zt + 0.01, 3.4, d2=6.8))  # countersink
     return diff(body, cuts)
 
-def glyph(ch, cx, cz, size, y_face, height):
-    """Raised character on the front face (centred at cx, cz), standing `height`
-    proud of the surface at y = y_face."""
+def _text_cs(txt, cx, cz, size, font):
+    """2D outline of a string in the (x, z) plane, centred on (cx, cz)"""
     from matplotlib.textpath import TextPath
     from matplotlib.font_manager import FontProperties
-    tp = TextPath((0, 0), ch, size=size, prop=FontProperties(fname=LABEL_FONT))
+    tp = TextPath((0, 0), txt, size=size, prop=FontProperties(fname=font))
     cs = CS.even_odd([p[:-1] for p in tp.to_polygons()])
     (bx0, by0, bx1, by1) = cs.bounds()
-    cs = cs.translate([cx - (bx0 + bx1) / 2, cz - (by0 + by1) / 2])
-    return M.extrude(cs, height + 0.01).rotate([90, 0, 0]).translate([0, y_face + 0.01, 0])
+    return cs.translate([cx - (bx0 + bx1) / 2, cz - (by0 + by1) / 2])
 
-# ---------------------------------------------------------------- power paddle
-# Lever geometry is drawn level (tip pointing to the front, -y) around the axle,
-# then tilted. x is relative to PSW_X; the lever has one flat side at x = -2.9
-# so it prints lying on that side.
-PSW_TAIL_R = 19.5              # tail length
-PSW_MAG_R = 15.0               # tail magnet radius from the axle
+def _face_solid(cs, y0, y1):
+    """extrude a 2D (x, z) shape into the front face between y0 and y1"""
+    return M.extrude(cs, y1 - y0).rotate([90, 0, 0]).translate([0, y1, 0])
+
+def label_solids(style):
+    """Switch labels on the housing's label strip, as 0.6 mm inlay solids.
+    The same solids are cut from the base and exported as the inlay part."""
+    if style == "BLANK":
+        return []
+    lx = (115 - PHOTO_X0) * PX + 0.6                     # centre of the label strip
+    z_on = H_TOTAL - (525 - PHOTO_Y0) * PX               # 入 / "On" group
+    z_off = H_TOTAL - (578 - PHOTO_Y0) * PX              # 切 / "Off" group
+    shapes = []
+    if style == "JP":
+        shapes += [_text_cs("入", lx - 0.6, z_on, 4.6, LABEL_FONT), _text_cs("切", lx - 0.6, z_off, 4.6, LABEL_FONT)]
+    elif style == "EN":                                    # IEC 60417: | = on, O = off
+        shapes.append(CS.square([0.9, 4.2]).translate([lx - 0.45, z_on + 0.8]))
+        shapes.append(_text_cs("On", lx, z_on - 2.6, 3.8, LABEL_FONT_EN))
+        shapes.append(_text_cs("Off", lx, z_off + 2.6, 3.8, LABEL_FONT_EN))
+        ring = CS.circle(2.3, 48) - CS.circle(1.4, 48)
+        shapes.append(ring.translate([lx, z_off - 3.3]))
+    else:
+        raise ValueError(style)
+    return [_face_solid(c, LABEL_Y[0], LABEL_Y[1]) for c in shapes]
+
+# ---------------------------------------------------------------- power switch (BRS lever)
 MAG_D, MAG_T = 8.0, 3.0        # 8 x 3 mm disc magnets
-# Red paddle head: fills the JX channel (22.8 wide) like the original
-HEAD_W, HEAD_H, HEAD_D = 20.6, 15.0, 7.0
-HEAD_R0 = 16.9                 # head back face radius (clears the channel floor at both stops)
-ARM_R = HEAD_R0 + HEAD_D - 1.5 # arm length into the head
+_LEVER = None
 
-def _pt(theta, y, z):
-    """level (y, z) relative to the axle -> case (y, z) when tilted by theta"""
-    a = math.radians(-theta)
-    return (PSW_PIVOT[0] + y * math.cos(a) - z * math.sin(a), PSW_PIVOT[1] + y * math.sin(a) + z * math.cos(a))
+def _load_stl(path):
+    d = open(path, "rb").read()
+    n = int.from_bytes(d[80:84], "little")
+    rec = np.frombuffer(d[84:84 + n * 50], dtype=[("n", "<f4", 3), ("v", "<f4", (3, 3)), ("a", "<u2")])
+    v = rec["v"].reshape(-1, 3).astype(np.float64)
+    uniq, inv = np.unique(np.round(v, 4), axis=0, return_inverse=True)
+    mesh = m3.Mesh(vert_properties=uniq.astype(np.float32), tri_verts=inv.reshape(-1, 3).astype(np.uint32))
+    return M(mesh)
 
-def _at(m, theta):
-    """level part -> tilted by theta and placed at the axle"""
-    return m.rotate([-theta, 0, 0]).translate([PSW_X, PSW_PIVOT[0], PSW_PIVOT[1]])
+def lever_native():
+    global _LEVER
+    if _LEVER is None:
+        if not os.path.exists(LEVER_STL):
+            raise SystemExit("Put Axeman's BRS_Lever.stl in " + LEVER_STL)
+        _LEVER = _load_stl(LEVER_STL)
+    return _LEVER
+
+def _pt(theta, r, a_off=0.0):
+    """case (y, z) of a lever point at radius r, angle a_off from the blade"""
+    a = math.radians(theta + a_off)
+    return (PSW_PIVOT[0] - r * math.cos(a), PSW_PIVOT[1] + r * math.sin(a))
+
+def paddle_lever(theta=None):
+    """The BRS lever in the case at blade angle theta. STL frame: profile in
+    (x, z) around the axle at the origin, 20 mm wide along y, magnet on the y=20
+    face. Mapped: STL +x -> forward (-y), STL +z -> up, STL y -> case x."""
+    t = PSW_ON if theta is None else theta
+    m = lever_native().transform([[0, 1, 0, PSW_X - 10.0],
+                                  [-1, 0, 0, PSW_PIVOT[0]],
+                                  [0, 0, 1, PSW_PIVOT[1]]])
+    # untilted, the blade sits at its native angle; tilt about the axle
+    dt = t - LEVER_NATIVE_BLADE
+    return m.translate([0, -PSW_PIVOT[0], -PSW_PIVOT[1]]).rotate([-dt, 0, 0]).translate([0, PSW_PIVOT[0], PSW_PIVOT[1]])
+
+def paddle_slot():
+    """Window through the channel wall: the lever's sweep between the stops
+    (with 0.4 mm clearance). The blade root meets the window ends = hard stops."""
+    sweeps = []
+    for k in range(15):
+        t = PSW_STOPS[0] + (PSW_STOPS[1] - PSW_STOPS[0]) * k / 14
+        sweeps.append(paddle_lever(t))
+    slab = box(PSW_X - 10.6, -20, 0, PSW_X + 10.6, FRONT_T + 0.5, 100)
+    # sweep is not convex (blade + drum), so union the per-angle slices instead of a hull,
+    # then add clearance by unioning small offsets
+    swept = union([sw ^ slab for sw in sweeps])
+    swept = union([swept.translate([0, 0, dz]) for dz in (-0.4, 0.0, 0.4)])
+    return M.batch_hull([swept]) ^ slab                      # convex window (simple to print)
+
+def paddle_wall_magnet_recesses():
+    """The fixed magnets sit partly in the back of the front wall."""
+    out = []
+    for t in (PSW_OFF, PSW_ON):
+        my, mz = _pt(t, math.hypot(*LEVER_MAG))
+        out.append(cylx(PSW_X + 10.6, PSW_X + 10.6 + MAG_T + 0.4, my, mz, MAG_D + 0.3))
+    return out
+
+PSW_SW = (26.0, 45.0, 64.8)    # microswitch: plunger-face y, body z0, z1 (19.8 long, along z)
 
 def _yz_extrude(pts, x0, x1):
     """extrude a polygon given in (y, z) along x from x0 to x1"""
     cs = CS([pts])
     if cs.area() <= 0:
         cs = CS([pts[::-1]])
-    m = M.extrude(cs, x1 - x0)                   # 2D (u, v) -> (x, y), extrude along z
-    # map (u, v, w) -> (x = w + x0, y = u, z = v)
-    return m.transform([[0, 0, 1, x0], [1, 0, 0, 0], [0, 1, 0, 0]])
-
-def paddle_lever(theta=None):
-    """Lever: hub on the axle, arm through the slot, tail with a magnet."""
-    t = PSW_OFF if theta is None else theta
-    hub = cylx(-2.9, 5.1, 0, 0, 9.0, fn=40)
-    arm = box(-2.9, -ARM_R, -3.0, 2.9, 0, 3.0)
-    tail = box(-2.9, 0, -5.0, 5.1, PSW_TAIL_R, 5.0) ^ cylx(-3, 5.2, 0, 0, 2 * PSW_TAIL_R, fn=96)
-    lev = union([hub, arm, tail])
-    lev = diff(lev, [cylx(-4, 6, 0, 0, 3.4),                                        # axle
-                     cylx(5.1 - MAG_T - 0.1, 5.2, PSW_MAG_R, 0, MAG_D + 0.2)])           # tail magnet (faces +x)
-    return _at(lev, t)
-
-def paddle_head(theta=None):
-    """Red paddle head, glued onto the end of the arm."""
-    t = PSW_OFF if theta is None else theta
-    r0, r1, hw, hh = HEAD_R0, HEAD_R0 + HEAD_D, HEAD_W / 2, HEAD_H / 2
-    c = 1.5                                                                        # front-edge chamfer
-    h = M.batch_hull([box(-hw, -r1 + c, -hh, hw, -r0, hh), box(-hw, -r1, -hh + c, hw, -r0, hh - c)])
-    cuts = [box(-3.05, -ARM_R - 0.05, -3.15, 3.05, -r0 + 0.1, 3.15)]              # arm socket
-    return _at(diff(h, cuts), t)
-
-def paddle_slot():
-    """Slot through the channel wall: the arm's sweep between the hard stops."""
-    arms = []
-    for k in range(13):
-        t = PSW_STOPS[0] + (PSW_STOPS[1] - PSW_STOPS[0]) * k / 12
-        arms.append(_at(box(-3.3, -ARM_R, -3.5, 3.3, 0, 3.5), t))
-    sweep = M.batch_hull(arms)
-    return sweep ^ box(PSW_X - 10, -1, 0, PSW_X + 10, FRONT_T + 0.5, 100)
+    return M.extrude(cs, x1 - x0).transform([[0, 0, 1, x0], [1, 0, 0, 0], [0, 1, 0, 0]])
 
 def paddle_frame():
-    """Cheeks carrying the axle and the microswitch. The right cheek holds the
-    two latch magnets (切 and 入) that the tail magnet slides past."""
+    """Cheeks carrying the M4 axle, the two latch magnets (right cheek, facing
+    the lever's magnet) and the START microswitch behind/above the drum."""
     X, (py, pz) = PSW_X, PSW_PIVOT
-    cl, cr = (-6.2, -3.2), (5.4, 9.4)                      # cheek x ranges
-    parts = []
-    for (a, b) in (cl, cr):
-        parts.append(box(X + a, FRONT_T + 0.3, 7.0, X + b, 39.0, 58.0))
-    parts.append(box(X + cl[0], FRONT_T + 0.3, 7.0, X + cr[1], 39.0, 8.5))         # base plate
-    parts.append(box(X + cl[0], 36.0, 7.0, X + cr[1], 39.0, 58.0))                  # rear wall
-    for (ex, ez) in PSW_EARS:          # ears to the wall bosses
-        x0, x1 = (X + ex - 6.4, X + cl[0] + 0.01) if ex < 0 else (X + cr[1] - 0.01, X + ex + 6.3)
+    cl, cr = (-14.2, -10.4), (10.6, 14.6)                  # cheek x ranges (lever is +-10)
+    y0 = FRONT_T + 0.3
+    parts = [box(X + cl[0], y0, 7.0, X + cl[1], 46.0, 71.0),
+             box(X + cr[0], y0, 7.0, X + cr[1], 46.0, 71.0),
+             box(X + cl[0], 42.0, 7.0, X + cr[1], 46.0, 71.0),             # rear wall
+             box(X + cl[0], y0, 7.0, X + cr[1], 46.0, 9.5)]                # base
+    for (ex, ez) in PSW_EARS:
+        x0, x1 = (X + ex - 5, X + cl[0] + 0.01) if ex < 0 else (X + cr[1] - 0.01, X + ex + 5)
         if ez < 30:
             parts.append(box(x0, FRONT_T + 2.3, 7.0, x1, 16.0, ez + 5))
-        else:                                   # 45-degree gusset down to the cheek
+        else:
             xc = X + cl[0] if ex < 0 else X + cr[1]
             parts.append(M.batch_hull([box(x0, FRONT_T + 2.3, ez - 5, x1, 16.0, ez + 5),
                                        box(xc - 0.01, FRONT_T + 2.3, ez - 5 - abs(x1 - x0), xc + 0.01, 16.0, ez - 5)]))
+    # 切 hard stop: the drum's lower edge lands on this block at PSW_STOPS[0]
+    a_face = PSW_STOPS[0] - 75.0                 # lower edge = blade - 75 deg
+    pts = []
+    for i in range(13):
+        a = a_face - 18.0 * i / 12
+        pts.append(_pt(0, 17.3, a))
+    for i in range(13):
+        a = a_face - 18.0 + 18.0 * i / 12
+        pts.append(_pt(0, 12.5, a))
+    parts.append(_yz_extrude(pts, X + cl[1] - 0.01, X + cr[0] + 0.01))
     body = union(parts)
-    cuts = [cylx(X + cl[0] - 1, X + cr[1] + 1, py, pz, 3.2)]                       # axle
-    for t in (PSW_OFF, PSW_ON):                   # latch magnets, pushed in from outside
-        my, mz = _pt(t, PSW_MAG_R, 0)
-        cuts.append(cylx(X + cr[0] + 0.6, X + cr[1] + 1, my, mz, MAG_D + 0.2))
+    cuts = [cylx(X + cl[0] - 1, X + cr[1] + 1, py, pz, 4.1)]                       # M4 axle
+    for t in (PSW_OFF, PSW_ON):                                                    # latch magnets
+        my, mz = _pt(t, math.hypot(*LEVER_MAG))
+        cuts.append(cylx(X + cr[0] - 0.01, X + cr[0] + MAG_T + 0.1, my, mz, MAG_D + 0.2))
     for (ex, ez) in PSW_EARS:
         cuts.append(cyly(FRONT_T, 17, X + ex, ez, 3.4))
-    # microswitch (SS-5GL / KW11 size) lying between the cheeks, plunger up, under
-    # the tail end; two M2 screws through height-adjustable slots in both cheeks
-    for hy in (PSW_SW_Y - 4.75, PSW_SW_Y + 4.75):
-        cuts.append(M.batch_hull([cylx(X + cl[0] - 1, X + cr[1] + 1, hy + dy, z, 2.4)
-                                  for dy in (-1.0, 1.0) for z in (9.5, 17.5)]))
+    # microswitch on its side between the cheeks, plunger facing forward, lever
+    # tip hanging down in front of it where the drum's top edge arrives at START.
+    # M2 screws through slots in both cheeks give +-3 mm front/back adjustment.
+    zc = (PSW_SW[1] + PSW_SW[2]) / 2
+    for hz in (zc - 4.75, zc + 4.75):
+        cuts.append(M.batch_hull([cylx(X + cl[0] - 1, X + cr[1] + 1, y, hz, 2.4)
+                                  for y in (PSW_SW[0] + 2.0, PSW_SW[0] + 8.5)]))
     return diff(body, cuts)
-
-PSW_SW_Y = 16.5                # microswitch centre (y); body 19.8 long, lever tip at the rear end
 
 # ---------------------------------------------------------------- DVD fascia
 # JX-style faceplate for a standard 5.25" optical drive, in two pieces: a frame
@@ -765,7 +815,8 @@ def build(outdir="stl"):
     }
     parts = {}
     for name, (x0, x1, y0, y1) in q.items():
-        parts[f"base_{name}"] = (shell ^ box(x0, y0, -10, x1, y1, 300), None)
+        if name != "front_left":
+            parts[f"base_{name}"] = (shell ^ box(x0, y0, -10, x1, y1, 300), None)
         # lid tiles print upside down (top face on the bed)
         parts[f"lid_{name}"] = (lidm ^ box(x0, y0, -10, x1, y1, 300), [180, 0, 0])
     parts["rear_slot_panel"] = (sins, [-90, 0, 0])      # outer face down
@@ -777,16 +828,29 @@ def build(outdir="stl"):
     parts["bay_cage_35_x2"] = (bay_cage(BAY_B_X0), [90, 0, 0])      # front face down
     parts["bay_blank_clip_x2"] = (bay_blank(BAY_B_X0), [-90, 0, 0])  # back face down
     parts["dvd_shelf"] = (dvd_shelf(), None)
-    parts["power_paddle_frame"] = (paddle_frame(), None)                # base down
-    parts["power_paddle_lever"] = (paddle_lever(0), [0, -90, 0])        # flat side down
-    parts["power_paddle_head_RED"] = (paddle_head(0), [90, 0, 0])       # front face down
+    parts["power_switch_frame"] = (paddle_frame(), None)                # base down
     dvd_frame, dvd_tray = dvd_fascia()
     parts["dvd_fascia_frame"] = (dvd_frame, [-90, 0, 0])              # back face down
     parts["dvd_fascia_tray"] = (dvd_tray, [-90, 0, 0])
     parts["fit_template_left"] = (fit_template(0), None)
     parts["fit_template_right"] = (fit_template(1), None)
 
+    # front-left base in three label styles, each with a matching inlay part that
+    # shares its coordinates (load both as one object for a second AMS colour)
+    fl_box = box(0, 0, -10, SPLIT_X, SPLIT_Y, 300)
+    extra = []
+    for style in LABEL_STYLES:
+        base = (shell if style == "JP" else lower_shell(style)) ^ fl_box
+        bb = base.bounding_box()
+        off = [-bb[0], -bb[1], -bb[2]]
+        extra.append((f"base_front_left_{style}", base.translate(off)))
+        if style != "BLANK":
+            extra.append((f"labels_{style}_inlay", union(label_solids(style)).translate(off)))
     report = []
+    for name, man in extra:
+        bb = man.bounding_box()
+        write_stl(man, os.path.join(outdir, f"{name}.stl"))
+        report.append((name, (bb[3] - bb[0], bb[4] - bb[1], bb[5] - bb[2]), man.volume() / 1000.0, man.status(), 0))
     for name, (man, rot) in parts.items():
         pm = to_bed(man, rot)
         bb = pm.bounding_box()

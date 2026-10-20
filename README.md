@@ -35,7 +35,7 @@ To regenerate: `pip install manifold3d numpy`, then `python3 jx_case.py`. To cha
 - **Drive A (right):** a working 3.5" bay for a floppy drive or card reader.
 - **Clip-in covers:** each bay has a JX-style cover that snaps in. The covers are interchangeable, so you can leave either bay empty.
 - **LED holes:** two 3 mm holes sit below the drive bays, for the HDD LED and a spare.
-- **Power switch:** a red paddle (in the spirit of the XT's big red switch) that tilts in the JX switch channel, with raised 入 and 切 labels. Magnets hold it at 切 (down) and 入 (up). Pushing it further up is a spring-back START that presses the PC's power button. See *Power paddle* below.
+- **Power switch:** Axeman's Big Red Switch lever (IBM XT style), used unmodified, set into the JX switch channel with the 入 and 切 labels on the left. Magnets hold it at 切 and 入, and pushing past 入 is a spring-back START. See *Power switch* below.
 - **Power LED window:** the square IR window takes a piece of smoked acrylic with the power LED behind it.
 - **Cartridge strip:** two cartridge doors and the mode-switch slot. These are cosmetic.
 
@@ -45,7 +45,9 @@ All parts are already oriented for printing, and none need supports except where
 
 | File | Qty | Notes |
 |---|---|---|
-| base_front_left / front_right / rear_left / rear_right | 1 each | Floor plus walls, printed floor-down. The front ones carry the JX face. |
+| base_front_left_JP / _EN / _BLANK | pick 1 | Front-left floor and walls, carrying the switch labels. JP = 入 / 切, EN = IEC "| On" / "Off O", BLANK = no labels (for stickers or transfers). |
+| labels_JP_inlay / labels_EN_inlay | 1 (with JP or EN) | The labels as 0.6 mm flush inlays, for a second AMS colour. See *Two-colour labels* below. |
+| base_front_right / rear_left / rear_right | 1 each | Floor plus walls, printed floor-down. The front one carries the rest of the JX face. |
 | lid_front_left / front_right / rear_left / rear_right | 1 each | Printed top face down. |
 | rear_slot_panel | 1 | Expansion slot panel. |
 | rear_io_panel | 1 | I/O shield opening (with a 1.2 mm rim so the shield clips in) and an 80 mm exhaust fan mount. |
@@ -55,9 +57,8 @@ All parts are already oriented for printing, and none need supports except where
 | dvd_shelf | 1 | Shelf and side rails for the optical drive. Rests on ledges on the front and right walls. |
 | dvd_fascia_frame | 1 | JX drive face for the optical drive: glue it onto the drive's fixed bezel. |
 | dvd_fascia_tray | 1 | Matching strip: glue it onto the tray front so the slot line continues when the tray is closed. |
-| power_paddle_frame | 1 | Mechanism frame with the axle, two latch magnets and the microswitch. Screws to 4 bosses behind the front wall. |
-| power_paddle_lever | 1 | Lever (hub, arm and magnet tail). Prints lying on its flat side. |
-| power_paddle_head_RED | 1 | Red paddle head, 20.6 × 15 mm, filling most of the switch channel like the original. Print in red and glue it onto the end of the arm once the lever is through the slot. |
+| power_switch_frame | 1 | Holds the M4 axle, the two latch magnets, the 切 stop and the START microswitch. Screws to 4 bosses behind the front wall. |
+| *BRS_Lever.stl* (Axeman) | 1 | Not included. Download it from Axeman's Printables model and print it in red. |
 | butterfly_key_x9 | 9 | Glue into the floor seams (CA or epoxy). |
 | foot_x6 | 6 | Feet. |
 | badge_plate_x2 | 2 | Blank plates for the two badge recesses. Put your logo on these. |
@@ -82,19 +83,29 @@ The optical drive can wear a JX-style front. The frame carries the door panel, t
 
 Both plates are 2 mm thick, so mount the drive 2 mm further back on the shelf. The rail slots allow this. Use thin double-sided tape or a few dots of CA on the tray strip, keeping glue off the edges so the tray still slides freely.
 
-## Power paddle
+## Two-colour labels (AMS)
 
-The magnetic latching idea comes from Axeman's [Big Red Switch (IBM XT style) with magnetic latching](https://www.printables.com/model/459567-big-red-switch-ibm-xt-style-with-magnetic-latching) (CC BY-NC-SA 4.0). The parts here are a new design.
+Each labelled base and its inlay STL share the same coordinates, so they line up automatically:
 
-Tip: paint the inside of the switch channel matte black, as on the original, so the slot behind the paddle disappears.
+1. Select both files, `base_front_left_EN.stl` and `labels_EN_inlay.stl` (or the JP pair), and drag them into Bambu Studio together.
+2. When it asks *"Load these files as a single object with multiple parts?"*, answer **Yes**.
+3. In the object list, give the label part its own filament (white suits the JX). Print as normal.
 
-| Position | Paddle | What it does |
+The labels sit on the front wall, which prints vertically, so the colour changes are spread over a few layers. That only adds a little time.
+
+**The smallest strokes are about 0.6 mm wide.** A 0.4 mm nozzle handles them, but print this piece with a fine layer height (0.12–0.16 mm) for crisp lettering. The blank version suits stickers or rub-on transfers.
+
+## Power switch
+
+The switch uses the red lever from Axeman's [Big Red Switch (IBM XT style) with magnetic latching](https://www.printables.com/model/459567-big-red-switch-ibm-xt-style-with-magnetic-latching) (CC BY-NC-SA 4.0), printed unmodified. Download `BRS_Lever.stl` from that page. The frame that holds it in this case is new, and so is the momentary START action. Because it builds on Axeman's part, treat the switch parts as CC BY-NC-SA too: credit Axeman, and don't sell them.
+
+The red drum sits in the JX switch channel and the blade sticks out of it.
+
+| Position | Blade | What it does |
 |---|---|---|
-| 切 | Tilted down | A magnet holds it here. Nothing is pressed. |
-| 入 | Tilted up | A magnet holds it here. Nothing is pressed. This is the resting position while you use the PC. |
-| START | Pushed further up | Presses the power button. The 入 magnet pulls it back when you let go, helped by the microswitch's own spring. |
-
-The ends of the slot in the front wall are the hard stops, so the paddle can't be pushed past START.
+| 切 | Down | A magnet holds it here, and a stop in the frame stops it going further. Nothing is pressed. |
+| 入 | Up | A magnet holds it here. Nothing is pressed. This is the resting position while you use the PC. |
+| START | Pushed further up (about 8°) | The drum's rear edge presses the microswitch. When you let go, the 入 magnet pulls it back, helped by the microswitch's spring. The blade meets the top of the window at the end of the travel. |
 
 A modern PC only needs a momentary press on its power button, so START is the only electrical position.
 
@@ -104,29 +115,30 @@ A modern PC only needs a momentary press on its power button, so START is the on
 
 **Parts:**
 
-- **Magnets:** three 8 × 3 mm disc magnets. One goes in the tail of the lever, and two go in the frame's right cheek, pushed in from outside.
+- **Lever:** Axeman's lever, printed in red.
+- **Magnets:** three 8 × 3 mm disc magnets. One goes in the lever's pocket, as in Axeman's design. Two go in the frame's right cheek, facing the lever. These two stick out about 2 mm and sit in matching recesses in the back of the front wall.
+- **Axle:** one M4×35 screw and a nyloc nut.
 - **Microswitch:** one lever microswitch, 19.8 × 10.2 × 6.4 mm (Omron SS-5GL or a generic "KW11-3Z" with a hinge lever).
-- **Screws:** one M3×16 screw and nyloc nut as the axle, two M2×20 screws and nuts for the microswitch, and four M3×10 screws to mount the frame.
+- **Screws:** two M2×25 screws and nuts for the microswitch, and four M3×10 screws to mount the frame.
 - **Inserts:** four M3 heat-set inserts for the wall bosses.
 
 **Assembly (on the bench first):**
 
-1. **Glue in the tail magnet**, flush with the lever's flat outer side.
-2. **Glue in the two cheek magnets.** Before gluing, check each one *attracts* the tail magnet; mark the faces so you get the polarity right.
-3. **Fit the lever** between the cheeks on the M3 axle. Tighten the nyloc nut just enough to remove play, so the lever still swings freely.
-4. **Fit the microswitch** between the cheeks, plunger up, with its lever tip toward the rear and under the lever's tail. Its screw slots allow about 8 mm of height adjustment. Set it so it clicks at START but not at 入. If needed, gently bend the switch lever to fine-tune.
-5. **Mount the frame** on the wall bosses with the arm through the slot, then glue the red head onto the arm.
+1. **Fit the lever magnet** flush in its pocket.
+2. **Fit the two cheek magnets.** Before gluing, check each one *attracts* the lever magnet; mark the faces so you get the polarity right.
+3. **Fit the lever** in the frame on the M4 axle. Tighten the nyloc nut until there's no play but the lever still swings freely.
+4. **Fit the microswitch** between the cheeks:
+   - Lay it on its side with the plunger facing forward and the hinge lever hanging down in front of it.
+   - The drum's rear top edge should push the lever back at START but not at 入. The screw slots give 6 mm of front-to-back adjustment, and you can bend the lever to fine-tune.
+5. **Mount the frame** on the wall bosses. The drum and blade go through the window from behind.
 6. **Wire it up:** connect the switch's COM and NO terminals to the motherboard's PWR_SW header pins. Polarity doesn't matter.
 
-**If the latch feels wrong:**
-
-- **Too strong or too weak:** change the gap. The skin between the cheek magnets and the lever is 0.6 mm. `paddle_frame()` controls it.
-- **START doesn't spring back reliably:** reduce the START angle (`PSW_START` and `PSW_STOPS`) so the paddle stays closer to the 入 magnet.
+**To regenerate the case:** put `BRS_Lever.stl` in `third_party/` before running `jx_case.py`. The script uses it to size the window and to check the clearances.
 
 ## Hardware
 
 - **Motherboard:** 9 × M3 10 mm female-female brass standoffs. Use 9 × M3×8 screws from under the floor and 9 × M3×6 screws through the board.
-- **Heat-set inserts:** 40 × M3 (short type, 4.0 mm hole). That covers 14 lid bosses, 6 feet, 2 for the I/O panel lip, 8 for the bay cages, 6 for the DVD shelf ledges and 4 for the power paddle.
+- **Heat-set inserts:** 40 × M3 (short type, 4.0 mm hole). That covers 14 lid bosses, 6 feet, 2 for the I/O panel lip, 8 for the bay cages, 6 for the DVD shelf ledges and 4 for the power switch.
 - **Seam bolts:** 10 × M3×20 with nuts (front and side wall seams).
 - **Lid bolts:** 8 × M3×10 with nuts (lid seam ribs) and 14 × M3×8 countersunk (lid to walls).
 - **Rear panels:** 9 × M3×12 with nuts (6 at the columns, 3 for the rail) and 2 × M3×8 (I/O panel lip to floor).

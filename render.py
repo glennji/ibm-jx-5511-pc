@@ -1,5 +1,5 @@
 """Small numpy z-buffer renderer for previews (no OpenGL needed)."""
-import sys
+import sys, math
 import numpy as np
 from PIL import Image
 
@@ -183,3 +183,44 @@ def paddle_views():
 
 if __name__ == "__main__" and "paddle" in sys.argv:
     paddle_views()
+
+def brs_views():
+    B = J.box
+    shell, lid = J.lower_shell(), J.lid()
+    fr = J.paddle_frame()
+    RED = (0.78, 0.13, 0.10); SW = (0.15, 0.15, 0.17); MAG = (0.65, 0.65, 0.7)
+    X = J.PSW_X
+    sw = B(X - 3.2, J.PSW_SW[0], J.PSW_SW[1], X + 3.2, J.PSW_SW[0] + 10.2, J.PSW_SW[2])
+    r = math.hypot(*J.LEVER_MAG)
+    mags = [J.cylx(X + 10.6, X + 13.6, *J._pt(t, r), 8.0) for t in (J.PSW_OFF, J.PSW_ON)]
+    out = {}
+    for nm, t in (("on", J.PSW_ON), ("off", J.PSW_OFF)):
+        tt = np.array([X + 6, 0, 36])
+        render([(shell, GREY), (lid, LIDC), (J.paddle_lever(t), RED)], f"preview_power_{nm}.png",
+               eye=tt + np.array([-170, -330, 110]), target=tt, fov=19, size=(1200, 1000))
+    items = [(shell, GREY), (fr, ACC), (J.paddle_lever(J.PSW_ON), RED), (sw, SW)] + [(m, MAG) for m in mags]
+    cut = B(X - 10.3, -40, -5, X + 40, 60, 100)
+    t2 = np.array([X, 20, 36])
+    render([(m ^ cut, c) for m, c in items], "preview_power_inside.png",
+           eye=t2 + np.array([-340, 30, 60]), target=t2, fov=24, size=(1200, 1000))
+
+if __name__ == "__main__" and "brs" in sys.argv:
+    import math
+    brs_views()
+
+def label_views():
+    import math
+    lid = J.lid()
+    WHITE = (0.93, 0.93, 0.9); RED = (0.78, 0.13, 0.10)
+    X = J.PSW_X
+    lev = J.paddle_lever(J.PSW_ON)
+    tt = np.array([X - 10, 0, 36])
+    for st in J.LABEL_STYLES:
+        shell = J.lower_shell(st)
+        items = [(shell, GREY), (lev, RED)]
+        if st != "BLANK":
+            items.append((J.union(J.label_solids(st)), WHITE))
+        render(items, f"preview_labels_{st}.png", eye=tt + np.array([-40, -420, 40]), target=tt, fov=10, size=(1000, 1000))
+
+if __name__ == "__main__" and "labels" in sys.argv:
+    label_views()
