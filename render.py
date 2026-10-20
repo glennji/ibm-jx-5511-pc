@@ -97,15 +97,29 @@ if __name__ == "__main__":
     shell, lid = J.lower_shell(), J.lid()
     si, io, rail = J.slot_insert(), J.io_insert(), J.bracket_rail()
     B = J.box
-    tgt = np.array([J.W / 2, J.D / 2, 70])
+    tgt = np.array([J.W / 2, J.D / 2, 80])
+    cB, cA = J.bay_cage(J.BAY_B_X0), J.bay_cage(J.BAY_A_X0)
+    bA = J.bay_blank(J.BAY_A_X0)
+    shelf = J.dvd_shelf()
+    cx, zb = J.ODD_CX, J.ODD_BOTTOM
+    dvd = J.union([B(cx - 73.0, 13, zb, cx + 73.0, 190, zb + 41.3),
+                   B(cx - 74.0, 1.6 + J.DVD_PLATE_T, J.ODD_CZ - 21.15, cx + 74.0, 13, J.ODD_CZ + 21.15)])
+    usb = B(J.BAY_B_X0 + 0.3, 3.6, J.BAY_Z[0] + 0.05, J.BAY_B_X0 + 101.9, 60, J.BAY_Z[0] + 25.4)
+    DVDC = (0.16, 0.16, 0.17); DEV = (0.22, 0.22, 0.24)
+    fF, fT = J.dvd_fascia()
+    inside = [(cB, INS), (cA, INS), (bA, GREY), (shelf, ACC), (dvd, DVDC), (usb, DEV), (fF, GREY), (fT, GREY)]
     which = sys.argv[1:] or ["front", "rear", "open", "exploded"]
     if "front" in which:
-        render([(shell, GREY), (lid, LIDC), (si, INS), (io, INS)], "preview_front.png",
+        render([(shell, GREY), (lid, LIDC), (si, INS), (io, INS)] + inside, "preview_front.png",
                eye=tgt + np.array([-520, -1050, 520]), target=tgt)
     if "flat" in which:
         t2 = np.array([J.W / 2, 0, (J.WALL_TOP + 3) / 2])
-        render([(shell, GREY), (lid, LIDC), (si, INS), (io, INS), (J.box(J.BAY_X[0]+0.2, 2.5, J.BAY_Z[0]+0.2, J.BAY_X[1]-0.2, 5, J.BAY_Z[1]-0.2), INS)],
+        render([(shell, GREY), (lid, LIDC), (si, INS), (io, INS)] + inside,
                "preview_front_flat.png", eye=t2 + np.array([0, -3000, 0]), target=t2, fov=7, size=(2000, 800), depth_shade=0.09)
+    if "dvd" in which:
+        t3 = np.array([cx, 0, J.ODD_CZ - 5])
+        render([(shell, GREY), (lid, LIDC)] + inside, "preview_dvd_fascia.png",
+               eye=t3 + np.array([-180, -900, 260]), target=t3, fov=17, size=(1600, 900), depth_shade=0.0)
     if "rear" in which:
         render([(shell, GREY), (lid, LIDC), (si, INS), (io, INS), (rail, ACC)], "preview_rear.png",
                eye=tgt + np.array([600, 1050, 420]), target=tgt)
@@ -113,7 +127,7 @@ if __name__ == "__main__":
         board = B(J.BOARD_X0, J.BOARD_REAR_Y - J.BOARD_D, J.BOARD_BOTTOM, J.BOARD_X0 + J.BOARD_W, J.BOARD_REAR_Y, J.BOARD_TOP)
         psu = B(J.PSU_X0, 321 - 150, J.FLOOR_T, J.PSU_X0 + 150, 321, J.FLOOR_T + 86)
         gpu = B(J.SLOT_X[0] - 40, J.INSERT_Y0 - 280, J.BOARD_TOP + 2, J.SLOT_X[0] + 4, J.INSERT_Y0 - 1, J.BOARD_TOP + 120)
-        render([(shell, GREY), (si, INS), (io, INS), (rail, ACC), (board, GREEN), (psu, PSUC), (gpu, RED)],
+        render([(shell, GREY), (si, INS), (io, INS), (rail, ACC), (board, GREEN), (psu, PSUC), (gpu, RED)] + inside,
                "preview_open.png", eye=tgt + np.array([-300, -800, 950]), target=tgt)
     if "exploded" in which:
         q = {"fl": (0, J.SPLIT_X, 0, J.SPLIT_Y), "fr": (J.SPLIT_X, J.W, 0, J.SPLIT_Y),
@@ -127,3 +141,45 @@ if __name__ == "__main__":
         items += [(si.translate([0, 110, 0]), INS), (io.translate([0, 110, 0]), INS), (rail.translate([0, 75, 0]), ACC)]
         render(items, "preview_exploded.png", eye=tgt + np.array([-650, -1100, 800]), target=tgt + np.array([0, 0, 40]))
     print("ok")
+
+def power_views():
+    """Close-up of the JX power slider: front, and a cutaway from behind."""
+    B = J.box
+    shell, lid = J.lower_shell(), J.lid()
+    fr = J.power_frame()
+    RED = (0.75, 0.12, 0.10); SW = (0.15, 0.15, 0.17)
+    X = J.PSW_X
+    sw = B(X + 12.4 - 9.9, J.PSW_BACK[0] - 6.5, 61.5, X + 12.4 + 9.9, J.PSW_BACK[0] - 0.1, 71.7)
+    lever = B(X + 4.0, J.PSW_BACK[0] - 5.0, 59.6, X + 17.5, J.PSW_BACK[0] - 1.5, 60.4)
+    zc = J.PSW_ON
+    items = [(shell, GREY), (fr, ACC), (J.power_slider(zc), INS), (J.power_knob(zc), RED), (sw, SW), (lever, (0.7, 0.7, 0.7))]
+    t = np.array([X + 10, 0, 45])
+    render(items[:1] + items[3:4] + [(lid, LIDC)], "preview_power_front.png", eye=t + np.array([-120, -420, 90]), target=t, fov=22, size=(1400, 1000))
+    cut = B(-5, -5, -5, 120, J.PSW_BACK[0] - 0.01, 100)
+    items_c = [(m ^ cut, c) for m, c in items]
+    t2 = np.array([X + 6, 8, 45])
+    render(items_c, "preview_power_inside.png", eye=t2 + np.array([90, 380, 60]), target=t2, fov=24, size=(1400, 1000))
+
+if __name__ == "__main__" and "power" in sys.argv:
+    power_views()
+
+def paddle_views():
+    B = J.box
+    shell, lid = J.lower_shell(), J.lid()
+    fr = J.paddle_frame()
+    RED = (0.75, 0.12, 0.10); SW = (0.15, 0.15, 0.17); MAG = (0.65, 0.65, 0.7)
+    X = J.PSW_X
+    sw = B(X - 2.2, J.PSW_SW_Y - 9.9, 8.6, X + 4.2, J.PSW_SW_Y + 9.9, 18.8)
+    t = J.PSW_ON
+    mags = [J.cylx(X + 6.0, X + 9.0, *J._pt(tt, J.PSW_MAG_R, 0), 8.0) for tt in (J.PSW_OFF, J.PSW_ON)]
+    items = [(shell, GREY), (fr, ACC), (J.paddle_lever(t), INS), (J.paddle_head(t), RED), (sw, SW)] + [(m, MAG) for m in mags]
+    tt = np.array([X + 10, 0, 40])
+    render([(shell, GREY), (lid, LIDC), (J.paddle_head(t), RED)], "preview_power_front.png",
+           eye=tt + np.array([-150, -400, 90]), target=tt + np.array([-6, 0, -4]), fov=16, size=(1400, 1000))
+    cut = B(X - 3.15, -30, -5, X + 30, 60, 100)     # slice off the left cheek to show the inside
+    items_c = [(m ^ cut, c) for m, c in items]
+    t2 = np.array([X, 18, 33])
+    render(items_c, "preview_power_inside.png", eye=t2 + np.array([-330, 40, 70]), target=t2, fov=24, size=(1400, 1000))
+
+if __name__ == "__main__" and "paddle" in sys.argv:
+    paddle_views()
