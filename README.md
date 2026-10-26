@@ -19,6 +19,7 @@ The hole pattern is ATX standard, so it should match. The I/O shield and slot po
 | `SLOT7_U` | Slot-side board edge to centre of the bracket nearest the I/O | 131.8 mm |
 | `RAIL_LEDGE_ABOVE_BOARD` | Height above the board top where card bracket flanges rest (also adjustable ±6 mm on the rail) | 108 mm |
 | `GROOVE_D` | Depth of the line between the two "units" | 4 mm |
+| `EDGE_R` | Radius of the rounded top edge and of both lips of the groove | 2.5 mm |
 
 ## Building
 

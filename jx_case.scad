@@ -98,6 +98,10 @@ function P(x0, y0, x1, y1) =
      (x1 - PHOTO_X0) * PX, H_TOTAL - (y0 - PHOTO_Y0) * PX];
 
 GROOVE_Z = [107.4, 111.4];             // line between the two "units" (photo rows 340-349)
+EDGE_R = 2.5;                          // quarter-round on the lid's top edge and both groove lips
+EDGE_SEG = 8;                          // facets per quarter-round
+CORNER_FRONT = 2.0;                    // 45-degree vertical corners (leg length)
+CORNER_REAR = 1.0;
 BADGE_UP = P(93, 102, 210, 145);
 BADGE_LO = P(93, 377, 210, 420);
 DRIVE_B_FRAME = P(712, 380, 1098, 528);
@@ -159,6 +163,38 @@ QUADRANTS = [["front_left", 0, SPLIT_X, 0, SPLIT_Y], ["front_right", SPLIT_X, W,
              ["rear_left", 0, SPLIT_X, SPLIT_Y, D], ["rear_right", SPLIT_X, W, SPLIT_Y, D]];
 
 // ---------------------------------------------------------------- helpers
+// case footprint with its 45-degree vertical corners; `rear` moves the back edge
+function case_outline(rear = D) =
+    [[CORNER_FRONT, 0], [W - CORNER_FRONT, 0], [W, CORNER_FRONT], [W, rear - CORNER_REAR],
+     [W - CORNER_REAR, rear], [CORNER_REAR, rear], [0, rear - CORNER_REAR], [0, CORNER_FRONT]];
+
+// thin horizontal slice of the footprint at height z, inset by `inset` all round
+module outline_slice(z, inset, rear = D) {
+    translate([0, 0, z]) linear_extrude(0.01) offset(delta = -inset) polygon(case_outline(rear));
+}
+
+// points on a quarter-round of radius EDGE_R: [inset from the face, height from the edge's flat end]
+function quarter_round() = [for (i = [0 : EDGE_SEG]) let (a = 90 * i / EDGE_SEG)
+    [EDGE_R - EDGE_R * cos(a), EDGE_R * sin(a)]];
+
+// Material removed to round one groove lip, following the footprint (front and
+// both sides; the outline is pushed past the rear so the back stays square).
+// The lip edge is at z = edge; dir = +1 rounds upward (upper lip), -1 downward.
+module groove_lip_cut(edge, dir) {
+    q = quarter_round();
+    for (i = [0 : EDGE_SEG - 1]) {
+        // q[i] is at the lip's mouth (inset 0, deepest into the groove's wall)
+        za = edge + dir * (EDGE_R - q[i][1]); zb = edge + dir * (EDGE_R - q[i + 1][1]);
+        difference() {
+            box(-1, -1, min(za, zb), W + 1, D + 1, max(za, zb));
+            hull() {
+                outline_slice(min(za, zb) - 0.01, dir > 0 ? q[i + 1][0] : q[i][0], D + 20);
+                outline_slice(max(za, zb), dir > 0 ? q[i][0] : q[i + 1][0], D + 20);
+            }
+        }
+    }
+}
+
 // numpy.arange: a, a+s, ... while < b (OpenSCAD's own [a:s:b] includes b)
 function arange(a, b, s) = let (n = ceil((b - a) / s)) n > 0 ? [for (i = [0 : n - 1]) a + i * s] : [];
 
@@ -304,16 +340,16 @@ module shell_cuts() {
         bowtie(x, SPLIT_Y, "y", 0, FLOOR_T - 3, FLOOR_T + 0.1);
 
     // --- corners + the line between the two stacked "units"
-    c = 3.0;
-    extrude_poly([[-1, -1], [c, -1], [-1, c]], -1, WALL_TOP + 1);
-    extrude_poly([[W + 1, -1], [W + 1, c], [W - c, -1]], -1, WALL_TOP + 1);
-    c2 = 2.0;
-    extrude_poly([[-1, D + 1], [-1, D - c2], [c2, D + 1]], -1, WALL_TOP + 1);
-    extrude_poly([[W + 1, D + 1], [W - c2, D + 1], [W + 1, D - c2]], -1, WALL_TOP + 1);
+    difference() {
+        box(-1, -1, -1, W + 1, D + 1, WALL_TOP + 1);
+        translate([0, 0, -2]) linear_extrude(WALL_TOP + 4) polygon(case_outline());
+    }
     gz0 = GROOVE_Z[0]; gz1 = GROOVE_Z[1];
     box(-1, -1, gz0, W + 1, GROOVE_D, gz1);                 // front
     box(-1, -1, gz0, GROOVE_D, D + 1, gz1);                 // left side
     box(W - GROOVE_D, -1, gz0, W + 1, D + 1, gz1);          // right side
+    groove_lip_cut(gz1, 1);                                 // rounded lips, like the lid's top edge
+    groove_lip_cut(gz0, -1);
 
     // --- left wall: two 92 mm intake fans aimed at the GPU
     for (yc = [105.0, 230.0]) {
@@ -394,7 +430,10 @@ module lid() {
     g = 0.4;
     difference() {
         union() {
-            hull() { box(0, 0, z0, W, D, z1 - 1); box(2, 2, z1 - 0.01, W - 2, D - 2, z1); }
+            hull() {                                        // plate, quarter-round top edge
+                translate([0, 0, z0]) linear_extrude(z1 - EDGE_R - z0) polygon(case_outline());
+                for (p = quarter_round()) outline_slice(min(z1 - EDGE_R + p[1], z1 - 0.01), p[0]);
+            }
             box(SIDE_T + g, FRONT_T + g, lz0, W - SIDE_T - g, FRONT_T + g + 2, z0 + 0.01);            // front
             box(SIDE_T + 4.2 + g, FRONT_T + g, lz0, SIDE_T + 4.2 + g + 2, INSERT_Y0 - g, z0 + 0.01);  // left (inside band)
             box(W - SIDE_T - g - 2, FRONT_T + g, lz0, W - SIDE_T - g, D - SIDE_T - g, z0 + 0.01);     // right
