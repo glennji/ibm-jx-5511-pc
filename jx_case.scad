@@ -804,19 +804,15 @@ module dvd_tray_cut() {
     dvd_r([DVD_TRAY[0] - g, DVD_TRAY[1] - g, DVD_TRAY[2] + g, DVD_TRAY[3] + g], DVD_YF - 3, DVD_YB + 1);
 }
 
-// recess the door panel and the slot in children(0), only inside children(1)
+// recess the door panel and the slot in the plate given as children(). These only
+// cut, so they need no clipping to the frame or tray: clipping them put cut faces
+// exactly on the tray opening's edges, which the preview (F5) drew as a thin lip.
 module dvd_details() {
     yf = DVD_YF; bh = DVD_BEZEL[1];
     difference() {
-        children(0);
-        intersection() {
-            union() {
-                // runs out through the top and bottom edges, so no thin full-height rim is left there
-                dvd_rr([DVD_DOOR[0], -DVD_DOOR_R - 1, DVD_DOOR[2], bh + DVD_DOOR_R + 1], DVD_DOOR_R, yf - 1, yf + DVD_DOOR_DEPTH);
-                dvd_r(DVD_SLOT, yf - 2, yf + 1.2);
-            }
-            children(1);
-        }
+        children();
+        dvd_rr([DVD_DOOR[0], 0.6, DVD_DOOR[2], bh - 0.6], DVD_DOOR_R, yf - 1, yf + DVD_DOOR_DEPTH);
+        dvd_r(DVD_SLOT, yf - 2, yf + 1.2);
     }
 }
 
@@ -848,10 +844,7 @@ module dvd_fascia_frame() {
     yf = DVD_YF; yb = DVD_YB; bw = DVD_BEZEL[0]; bh = DVD_BEZEL[1];
     difference() {
         union() {
-            dvd_details() {
-                difference() { dvd_r([0, 0, bw, bh], yf, yb); dvd_tray_cut(); }
-                dvd_frame_region();
-            }
+            dvd_details() difference() { dvd_r([0, 0, bw, bh], yf, yb); dvd_tray_cut(); }
             intersection() { dvd_lock(); dvd_frame_region(); }   // kept clear of the tray's path
         }
         dvd_r(DVD_EJECT, yf - 3, yb + 1);                                                 // press the real eject button
@@ -862,10 +855,7 @@ module dvd_fascia_frame() {
 }
 
 module dvd_fascia_tray() {
-    dvd_details() {
-        dvd_r(DVD_TRAY, DVD_YF, DVD_YB);
-        dvd_r(DVD_TRAY, DVD_YF - 3, DVD_YB + 1);
-    }
+    dvd_details() dvd_r(DVD_TRAY, DVD_YF, DVD_YB);
 }
 
 // 1.2 mm flat template of the board: hole positions + I/O and slot marks. Lay
