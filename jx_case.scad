@@ -811,7 +811,8 @@ module dvd_details() {
         children(0);
         intersection() {
             union() {
-                dvd_rr([DVD_DOOR[0], 0.6, DVD_DOOR[2], bh - 0.6], DVD_DOOR_R, yf - 1, yf + DVD_DOOR_DEPTH);
+                // runs out through the top and bottom edges, so no thin full-height rim is left there
+                dvd_rr([DVD_DOOR[0], -DVD_DOOR_R - 1, DVD_DOOR[2], bh + DVD_DOOR_R + 1], DVD_DOOR_R, yf - 1, yf + DVD_DOOR_DEPTH);
                 dvd_r(DVD_SLOT, yf - 2, yf + 1.2);
             }
             children(1);
