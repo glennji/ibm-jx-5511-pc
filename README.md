@@ -84,7 +84,7 @@ All parts are already oriented for printing, and none need supports except where
 
 ## DVD fascia
 
-The optical drive can wear a JX-style front. The frame carries the door panel, the lever, the slot line and a small LED recess (paint it red). The tray strip carries the middle of the slot line, and it moves out with the tray. A cut-out leaves the drive's real eject button reachable, and a 2.5 mm hole lets the drive's activity light show through.
+The optical drive can wear a JX-style front. The frame carries the recessed door panel with the JX drive lock standing out from it, the slot line and a small LED recess (paint it red). The tray strip carries the middle of the door panel and the slot line, and it moves out with the tray. The lock is cosmetic and stays clear of the tray opening, so it never gets in the tray's way. A cut-out leaves the drive's real eject button reachable, and a 2.5 mm hole lets the drive's activity light show through.
 
 **Tray and button positions differ between drive models, so measure yours first.** Measure from the top-left corner of the bezel, then change these values at the top of `jx_case.scad` and rebuild:
 
@@ -93,8 +93,10 @@ The optical drive can wear a JX-style front. The frame carries the door panel, t
 | `DVD_TRAY` | Tray front: left, top, right, bottom (mm from the top-left corner) | 10, 8, 138, 22.5 |
 | `DVD_EJECT` | Eject button opening | 124, 31, 140, 37 |
 | `DVD_ACT_LED` | Drive activity LED hole (`[]` to skip) | 115, 34 |
+| `DVD_LOCK_PROUD` | How far the drive lock stands out from the fascia face | 5 mm |
+| `DVD_DOOR_DEPTH` | Depth of the door panel recess under the lock | 0.8 mm |
 
-Both plates are 2 mm thick, so mount the drive 2 mm further back on the shelf. The rail slots allow this. Use thin double-sided tape or a few dots of CA on the tray strip, keeping glue off the edges so the tray still slides freely.
+Both plates are 2 mm thick (the frame is 7 mm overall with the lock; it prints face up, so the lock needs no supports), so mount the drive 2 mm further back on the shelf. The rail slots allow this. Use thin double-sided tape or a few dots of CA on the tray strip, keeping glue off the edges so the tray still slides freely.
 
 ## Two-colour labels (AMS)
 

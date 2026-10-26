@@ -8,10 +8,11 @@ fit_a = "shell";
 fit_b = "lid";
 
 // printed parts that sit in the case together
-FIT_SOLIDS = ["shell", "lid", "slot", "io", "rail", "cageB", "cageA", "blankB", "blankA", "shelf"];
+FIT_SOLIDS = ["shell", "lid", "slot", "io", "rail", "cageB", "cageA", "blankB", "blankA", "shelf", "fasciaF", "fasciaT"];
 
 // hardware envelopes: [name, [x0, y0, z0, x1, y1, z1]], checked against every
-// printed part except the bay blanks and the bracket rail
+// printed part except the bay blanks, the bracket rail and the DVD fascia (which
+// replaces the front of the drive's own bezel)
 FIT_ENVELOPES = [
     ["DVD body 146x41.3x185", [ODD_CX - 73.0, 13, ODD_BOTTOM + 0.05, ODD_CX + 73.0, 198, ODD_BOTTOM + 41.3]],
     ["DVD bezel 148x42.3", [ODD_CX - 74.0, 1.5, ODD_CZ - 21.15, ODD_CX + 74.0, 13, ODD_CZ + 21.15]],
@@ -37,8 +38,10 @@ module fit_solid(name) {
     else if (name == "blankB") bay_blank(BAY_B_X0);
     else if (name == "blankA") bay_blank(BAY_A_X0);
     else if (name == "shelf") dvd_shelf();
+    else if (name == "fasciaF") dvd_fascia_frame();
+    else if (name == "fasciaT") dvd_fascia_tray();
     else if (name == "parts") {
-        for (s = FIT_SOLIDS) if (s != "blankB" && s != "blankA" && s != "rail") fit_solid(s);
+        for (s = FIT_SOLIDS) if (search([s], ["blankB", "blankA", "rail", "fasciaF", "fasciaT"]) == [[]]) fit_solid(s);
     } else if (env != []) let (b = FIT_ENVELOPES[env][1]) box(b[0], b[1], b[2], b[3], b[4], b[5]);
     else assert(false, str("unknown fit solid ", name));
 }

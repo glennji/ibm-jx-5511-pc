@@ -36,6 +36,10 @@ DVD_EJECT = [124.0, 31.0, 140.0, 37.0]; // eject button: x0, from-top0, x1, from
 DVD_ACT_LED = [115.0, 34.0];            // drive's activity LED (through hole); [] to skip
 DVD_PLATE_T = 2.0;
 DVD_TRAY_GAP = 0.6;
+// How far the drive lock stands out from the fascia face
+DVD_LOCK_PROUD = 5.0;
+// Depth of the recessed door panel the lock sits on
+DVD_DOOR_DEPTH = 0.8;
 
 /* [Switch labels] */
 LABEL_FONT = "IPAGothic";
@@ -776,48 +780,78 @@ function dvd_pr(px0, py0, px1, py1) =
     [(px0 - 832) * DVD_FX, (py0 - 105) * DVD_FZ, (px1 - 832) * DVD_FX, (py1 - 105) * DVD_FZ];
 DVD_SLOT = dvd_pr(848, 155, 1365, 183);
 DVD_DOOR = dvd_pr(935, 105, 1155, 255);
-DVD_LEVER = dvd_pr(935, 107, 1070, 136);
-DVD_KNOB = [(965 - 832) * DVD_FX, (121 - 105) * DVD_FZ];
+DVD_DOOR_R = 2.0;                         // corner radius of the door recess
+// drive lock: round pivot head + straight arm with a rounded end (photo-traced)
+function dvd_pt(px, py) = [(px - 832) * DVD_FX, (py - 105) * DVD_FZ];
+DVD_LOCK_PIVOT = dvd_pt(967, 119.6);
+DVD_LOCK_END = dvd_pt(1061, 119.6);
+DVD_LOCK_R = 4.0;                         // pivot head radius
+DVD_LOCK_ARM = 5.8;                       // arm height
+DVD_LOCK_HOLE = 2.8;                      // dimple in the pivot
 DVD_JX_LED = [(1280 - 832) * DVD_FX, (130 - 105) * DVD_FZ];
 
 // rectangle in bezel coords: b = [x0, from-top0, x1, from-top1]
 module dvd_r(b, ya, yb) { box(DVD_X0 + b[0], ya, DVD_ZT - b[3], DVD_X0 + b[2], yb, DVD_ZT - b[1]); }
+
+// the same with rounded corners of radius r
+module dvd_rr(b, r, ya, yb) {
+    translate([DVD_X0, yb, DVD_ZT]) rotate([90, 0, 0]) linear_extrude(yb - ya)
+        offset(r) offset(-r) translate([b[0], -b[3]]) square([b[2] - b[0], b[3] - b[1]]);
+}
 
 module dvd_tray_cut() {
     g = DVD_TRAY_GAP;
     dvd_r([DVD_TRAY[0] - g, DVD_TRAY[1] - g, DVD_TRAY[2] + g, DVD_TRAY[3] + g], DVD_YF - 3, DVD_YB + 1);
 }
 
-// raise the door panel + lever and recess the slot on children(0), only inside children(1)
+// recess the door panel and the slot in children(0), only inside children(1)
 module dvd_details() {
     yf = DVD_YF; bh = DVD_BEZEL[1];
     difference() {
-        union() {
-            children(0);
-            intersection() {
-                union() {
-                    dvd_r([DVD_DOOR[0], 0.6, DVD_DOOR[2], bh - 0.6], yf - 0.6, yf + 0.01);
-                    dvd_r(DVD_LEVER, yf - 1.4, yf + 0.01);
-                }
-                children(1);
-            }
-        }
+        children(0);
         intersection() {
             union() {
+                dvd_rr([DVD_DOOR[0], 0.6, DVD_DOOR[2], bh - 0.6], DVD_DOOR_R, yf - 1, yf + DVD_DOOR_DEPTH);
                 dvd_r(DVD_SLOT, yf - 2, yf + 1.2);
-                cyly(yf - 2, yf - 0.4, DVD_X0 + DVD_KNOB[0], DVD_ZT - DVD_KNOB[1], 3.0);
             }
             children(1);
         }
     }
 }
 
+// The drive lock, standing DVD_LOCK_PROUD out from the face on the door recess floor.
+module dvd_lock() {
+    yf = DVD_YF;
+    p = [DVD_LOCK_PIVOT[0], -DVD_LOCK_PIVOT[1]]; e = [DVD_LOCK_END[0], -DVD_LOCK_END[1]];
+    difference() {
+        translate([DVD_X0, yf + DVD_DOOR_DEPTH + 0.01, DVD_ZT]) rotate([90, 0, 0])
+            linear_extrude(DVD_DOOR_DEPTH + 0.01 + DVD_LOCK_PROUD) {
+                translate(p) circle(r = DVD_LOCK_R);
+                hull() { translate(p) circle(d = DVD_LOCK_ARM); translate(e) circle(d = DVD_LOCK_ARM); }
+            }
+        cyly(yf - DVD_LOCK_PROUD - 1, yf - DVD_LOCK_PROUD + 1,
+             DVD_X0 + DVD_LOCK_PIVOT[0], DVD_ZT - DVD_LOCK_PIVOT[1], DVD_LOCK_HOLE);
+    }
+}
+
+// everything around the fascia except the tray opening
+module dvd_frame_region() {
+    bh = DVD_BEZEL[1];
+    difference() {
+        box(DVD_X0 - 5, DVD_YF - DVD_LOCK_PROUD - 5, DVD_ZT - bh - 5, DVD_X0 + DVD_BEZEL[0] + 5, DVD_YB + 5, DVD_ZT + 5);
+        dvd_tray_cut();
+    }
+}
+
 module dvd_fascia_frame() {
     yf = DVD_YF; yb = DVD_YB; bw = DVD_BEZEL[0]; bh = DVD_BEZEL[1];
     difference() {
-        dvd_details() {
-            difference() { dvd_r([0, 0, bw, bh], yf, yb); dvd_tray_cut(); }
-            difference() { box(DVD_X0 - 5, yf - 5, DVD_ZT - bh - 5, DVD_X0 + bw + 5, yb + 5, DVD_ZT + 5); dvd_tray_cut(); }
+        union() {
+            dvd_details() {
+                difference() { dvd_r([0, 0, bw, bh], yf, yb); dvd_tray_cut(); }
+                dvd_frame_region();
+            }
+            intersection() { dvd_lock(); dvd_frame_region(); }   // kept clear of the tray's path
         }
         dvd_r(DVD_EJECT, yf - 3, yb + 1);                                                 // press the real eject button
         cyly(yf - 2, yf + 1.0, DVD_X0 + DVD_JX_LED[0], DVD_ZT - DVD_JX_LED[1], 3.0);      // JX LED: paint it red
