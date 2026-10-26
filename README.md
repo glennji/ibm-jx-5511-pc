@@ -4,6 +4,8 @@ A dark-grey desktop box modelled on the front of an IBM JX (5511) system unit wi
 
 **Outside size:** 495 W × 324 D × 199 H mm, the same width-to-height ratio as the photo (about 2.49 : 1).
 
+![Exploded preview](./preview_exploded.png)
+
 ## Before you print anything big: run the fit check
 
 Print `fit_template_left` and `fit_template_right` first. They are 1.2 mm thick and take about 30 minutes each. Tape them together and lay them on your MSI board.
@@ -11,16 +13,29 @@ Print `fit_template_left` and `fit_template_right` first. They are 1.2 mm thick 
 - **All 9 holes should line up with the board's mounting holes.**
 - **The V-notches on the rear edge** mark the left and right edges of the I/O shield and the centre of each expansion bracket. They should line up with your board's I/O shield and slots.
 
-The hole pattern is ATX standard, so it should match. The I/O shield and slot positions are best estimates, so check them. If they are off, measure from the board's slot-side edge, then edit these values near the top of `jx_case.py` and rerun:
+The hole pattern is ATX standard, so it should match. The I/O shield and slot positions are best estimates, so check them. If they are off, measure from the board's slot-side edge, then change these values at the top of `jx_case.scad` (they're also in the OpenSCAD Customizer) and rebuild:
 
 | Parameter | Meaning | Current |
 |---|---|---|
 | `IO_U0` | Slot-side board edge to left edge of the I/O shield opening | 146.0 mm |
 | `SLOT7_U` | Slot-side board edge to centre of the bracket nearest the I/O | 131.8 mm |
-| `RAIL_LEDGE_Z` | Height where card bracket flanges rest (also adjustable ±6 mm on the rail) | board top + 108 mm |
+| `RAIL_LEDGE_ABOVE_BOARD` | Height above the board top where card bracket flanges rest (also adjustable ±6 mm on the rail) | 108 mm |
 | `GROOVE_D` | Depth of the line between the two "units" | 4 mm |
+| `EDGE_R` | Radius of the rounded top edge and of both lips of the groove | 2.5 mm |
 
-To regenerate: `pip install manifold3d numpy`, then `python3 jx_case.py`. To change the front, edit the photo-pixel boxes passed to `P()` in `front_relief()`.
+## Building
+
+The model is `jx_case.scad`. You need [OpenSCAD](https://openscad.org) 2025 or later (a development snapshot), which has the fast Manifold backend and `textmetrics()`, plus Python 3. The scripts use only the standard library.
+
+- **`python3 build.py`** renders every part into `stl/`, oriented for printing and dropped onto the bed, then prints a size and volume report. It takes a few seconds. Use `python3 build.py <outdir> [part ...]` to build only some parts.
+- **`python3 fitcheck.py`** checks clearances. It intersects every pair of printed parts in their assembled positions, and every hardware envelope (board, PSU, GPU, cooler, drives) against the case. It reports any overlap with its volume, and any part that has split into separate pieces.
+- **`python3 render.py [scene ...]`** writes the `preview_*.png` images (`all` renders every scene). The scenes and cameras are in `render.scad`. The case colour is `CASE_COLOUR` in `jx_case.scad` (charcoal by default), used both here and when you view a part in the OpenSCAD GUI; change it there, or pass `-D 'CASE_COLOUR="DimGray"'` to `openscad`.
+
+To look at one part, open `jx_case.scad` in OpenSCAD and pick it in the Customizer's `part` list. `asm_*` entries show a part in its assembled position. If `openscad` isn't on your PATH, set `OPENSCAD=/path/to/openscad`.
+
+**Label fonts:** the JP labels use IPA Gothic (`brew install --cask font-ipafont` on macOS, `fonts-ipafont-gothic` on Debian/Ubuntu), and the EN labels use Liberation Sans Bold. If a font is missing, OpenSCAD substitutes another one that may lack the 入/切 glyphs, so `build.py` refuses to write the labelled parts until the font is installed or `LABEL_FONT` / `LABEL_FONT_EN` names one you have.
+
+To change the front, edit the photo-pixel boxes passed to `P()` in `front_recesses()`, `front_raises()` and `front_through()`.
 
 ## Front panel layout
 
@@ -71,17 +86,19 @@ All parts are already oriented for printing, and none need supports except where
 
 ## DVD fascia
 
-The optical drive can wear a JX-style front. The frame carries the door panel, the lever, the slot line and a small LED recess (paint it red). The tray strip carries the middle of the slot line, and it moves out with the tray. A cut-out leaves the drive's real eject button reachable, and a 2.5 mm hole lets the drive's activity light show through.
+The optical drive can wear a JX-style front. The frame carries the recessed door panel with the JX drive lock standing out from it, the slot line and a small LED recess (paint it red). The tray strip carries the middle of the door panel and the slot line, and it moves out with the tray. The lock is cosmetic and stays clear of the tray opening, so it never gets in the tray's way. A cut-out leaves the drive's real eject button reachable, and a 2.5 mm hole lets the drive's activity light show through.
 
-**Tray and button positions differ between drive models, so measure yours first.** Measure from the top-left corner of the bezel, then edit these values near `dvd_fascia()` in `jx_case.py` and rerun:
+**Tray and button positions differ between drive models, so measure yours first.** Measure from the top-left corner of the bezel, then change these values at the top of `jx_case.scad` and rebuild:
 
 | Parameter | Meaning | Default |
 |---|---|---|
 | `DVD_TRAY` | Tray front: left, top, right, bottom (mm from the top-left corner) | 10, 8, 138, 22.5 |
 | `DVD_EJECT` | Eject button opening | 124, 31, 140, 37 |
-| `DVD_ACT_LED` | Drive activity LED hole (`None` to skip) | 115, 34 |
+| `DVD_ACT_LED` | Drive activity LED hole (`[]` to skip) | 115, 34 |
+| `DVD_LOCK_PROUD` | How far the drive lock stands out from the fascia face | 5 mm |
+| `DVD_DOOR_DEPTH` | Depth of the door panel recess under the lock | 0.8 mm |
 
-Both plates are 2 mm thick, so mount the drive 2 mm further back on the shelf. The rail slots allow this. Use thin double-sided tape or a few dots of CA on the tray strip, keeping glue off the edges so the tray still slides freely.
+Both plates are 2 mm thick (the frame is 7 mm overall with the lock; it prints face up, so the lock needs no supports), so mount the drive 2 mm further back on the shelf. The rail slots allow this. Use thin double-sided tape or a few dots of CA on the tray strip, keeping glue off the edges so the tray still slides freely.
 
 ## Two-colour labels (AMS)
 
@@ -133,7 +150,7 @@ A modern PC only needs a momentary press on its power button, so START is the on
 5. **Mount the frame** on the wall bosses. The drum and blade go through the window from behind.
 6. **Wire it up:** connect the switch's COM and NO terminals to the motherboard's PWR_SW header pins. Polarity doesn't matter.
 
-**To regenerate the case:** `jx_case.py` reads `third_party/BRS_Lever.stl` to size the window and to check the clearances.
+**To regenerate the case:** `jx_case.scad` reads `third_party/BRS_Lever.stl` to size the window and to check the clearances.
 
 ## Hardware
 
@@ -178,6 +195,6 @@ A modern PC only needs a momentary press on its power button, so START is the on
   - Licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) and included **unmodified**.
   - The magnetic latching concept also comes from this design.
   - Non-commercial use only. Adaptations must be shared under the same licence.
-- **Power switch frame** (`power_switch_frame`, generated by `jx_case.py`): designed for this project to hold Axeman's lever. Because it is built around that design, it is also released under CC BY-NC-SA 4.0.
-- **Everything else in this repository** (the case design, `jx_case.py` and the other scripts, the STLs and the renders): © Glenn Ji Mason, licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). The full licence text is in [`LICENSE`](LICENSE).
+- **Power switch frame** (`power_switch_frame`, generated by `jx_case.scad`): designed for this project to hold Axeman's lever. Because it is built around that design, it is also released under CC BY-NC-SA 4.0.
+- **Everything else in this repository** (the case design, `jx_case.scad` and the scripts, the STLs and the renders): © Glenn Ji Mason, licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). The full licence text is in [`LICENSE`](LICENSE).
 - **IBM** and the **IBM JX** are trademarks of IBM. This is an unofficial fan project, not affiliated with or endorsed by IBM. No IBM logo artwork is included.
