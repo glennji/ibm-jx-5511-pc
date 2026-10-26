@@ -41,6 +41,12 @@ DVD_TRAY_GAP = 0.6;
 LABEL_FONT = "IPAGothic";
 LABEL_FONT_EN = "Liberation Sans:style=Bold";
 
+/* [Display] */
+// Colour of the parts on screen (RGB 0-1 or a name such as "DimGray"); STLs
+// carry no colour. OpenSCAD lights from the camera's left, so faces turned
+// away render a lot darker than this.
+CASE_COLOUR = [0.30, 0.30, 0.31];
+
 /* [Hidden] */
 $fn = 48;
 
@@ -911,8 +917,10 @@ module print_part(name) {
     else assert(false, str("unknown part ", name));
 }
 
-if (part == "assembly") {
-    solid("shell_JP"); lid(); slot_insert(); io_insert(); bracket_rail();
-} else if (part == "assembly_open") {
-    solid("shell_JP"); slot_insert(); io_insert(); bracket_rail();
-} else if (part != "none") print_part(part);   // "none": used as a library by fitcheck.scad / render.scad
+color(CASE_COLOUR) {
+    if (part == "assembly") {
+        solid("shell_JP"); lid(); slot_insert(); io_insert(); bracket_rail();
+    } else if (part == "assembly_open") {
+        solid("shell_JP"); slot_insert(); io_insert(); bracket_rail();
+    } else if (part != "none") print_part(part);   // "none": used as a library by fitcheck.scad / render.scad
+}

@@ -27,7 +27,7 @@ The model is `jx_case.scad`. You need [OpenSCAD](https://openscad.org) 2025 or l
 
 - **`python3 build.py`** renders every part into `stl/`, oriented for printing and dropped onto the bed, then prints a size and volume report. It takes a few seconds. Use `python3 build.py <outdir> [part ...]` to build only some parts.
 - **`python3 fitcheck.py`** checks clearances. It intersects every pair of printed parts in their assembled positions, and every hardware envelope (board, PSU, GPU, cooler, drives) against the case. It reports any overlap with its volume, and any part that has split into separate pieces.
-- **`python3 render.py [scene ...]`** writes the `preview_*.png` images (`all` renders every scene). The scenes and cameras are in `render.scad`. The case colour is `CASE_COLOUR` there (charcoal by default); change it, or pass `-D 'CASE_COLOUR="DimGray"'` to `openscad`.
+- **`python3 render.py [scene ...]`** writes the `preview_*.png` images (`all` renders every scene). The scenes and cameras are in `render.scad`. The case colour is `CASE_COLOUR` in `jx_case.scad` (charcoal by default), used both here and when you view a part in the OpenSCAD GUI; change it there, or pass `-D 'CASE_COLOUR="DimGray"'` to `openscad`.
 
 To look at one part, open `jx_case.scad` in OpenSCAD and pick it in the Customizer's `part` list. `asm_*` entries show a part in its assembled position. If `openscad` isn't on your PATH, set `OPENSCAD=/path/to/openscad`.
 

@@ -4,12 +4,8 @@ part = "none";
 
 scene = "front"; // [front, flat, dvd, rear, open, exploded, power_on, power_off, power_inside, labels_JP, labels_EN, labels_BLANK]
 
-// Printed-part colour (RGB 0-1 or a name such as "DimGray"). OpenSCAD lights
-// from the camera's left, so faces turned away render a lot darker than this.
-CASE_COLOUR = [0.30, 0.30, 0.31];
-
 /* [Hidden] */
-GREY = CASE_COLOUR;                                   // base, covers, DVD fascia
+GREY = CASE_COLOUR;                                   // base, covers, DVD fascia (CASE_COLOUR is in jx_case.scad)
 LIDC = is_string(CASE_COLOUR) ? CASE_COLOUR : CASE_COLOUR * 1.06;  // lid, a touch lighter
 INS = is_string(CASE_COLOUR) ? CASE_COLOUR : CASE_COLOUR * 0.85;   // rear panels, bay cages
 ACC = [0.80, 0.60, 0.15]; GREEN = [0.20, 0.50, 0.25]; PSUC = [0.55, 0.55, 0.55];
