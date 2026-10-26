@@ -1,0 +1,24 @@
+{
+    "fileFormatVersion": "1",
+    "parameterSets": {
+        "New set 1": {
+            "CASE_COLOUR": "[0.3, 0.3, 0.31]",
+            "DVD_ACT_LED": "[115, 34]",
+            "DVD_BEZEL": "[148, 42.3]",
+            "DVD_DOOR_DEPTH": "1.6000000000000001",
+            "DVD_EJECT": "[124, 31, 140, 37]",
+            "DVD_LOCK_PROUD": "2",
+            "DVD_PLATE_T": "3",
+            "DVD_TRAY": "[10, 8, 138, 22.5]",
+            "DVD_TRAY_GAP": "0.59999999999999998",
+            "GROOVE_D": "4",
+            "IO_U0": "146",
+            "LABEL_FONT": "IPAGothic",
+            "LABEL_FONT_EN": "Liberation Sans:style=Bold",
+            "RAIL_LEDGE_ABOVE_BOARD": "108",
+            "SLOT7_U": "131.80000000000001",
+            "lever_angle": "30",
+            "part": "dvd_fascia_frame"
+        }
+    }
+}
