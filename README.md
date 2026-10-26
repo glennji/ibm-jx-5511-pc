@@ -4,6 +4,8 @@ A dark-grey desktop box modelled on the front of an IBM JX (5511) system unit wi
 
 **Outside size:** 495 W × 324 D × 199 H mm, the same width-to-height ratio as the photo (about 2.49 : 1).
 
+![Exploded preview](./preview_exploded.png)
+
 ## Before you print anything big: run the fit check
 
 Print `fit_template_left` and `fit_template_right` first. They are 1.2 mm thick and take about 30 minutes each. Tape them together and lay them on your MSI board.
