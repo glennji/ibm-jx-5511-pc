@@ -27,7 +27,9 @@ The hole pattern is ATX standard, so it should match. The I/O shield and slot po
 
 The model is `jx_case.scad`. You need [OpenSCAD](https://openscad.org) 2025 or later (a development snapshot), which has the fast Manifold backend and `textmetrics()`, plus Python 3. The scripts use only the standard library.
 
-- **`python3 build.py`** renders every part into `stl/`, oriented for printing and dropped onto the bed, then prints a size and volume report. It takes a few seconds. Use `python3 build.py <outdir> [part ...]` to build only some parts.
+On Arch, the simplest install is the AUR package `openscad-snapshot-appimage`. It bundles its own libraries, so system updates (a new boost, for example) can't break it the way they can break a source build like `openscad-git`. Older snapshots such as the AppImage still treat `textmetrics()` as experimental; the scripts turn it on automatically, but in the GUI you need to tick it under *Edit → Preferences → Features*.
+
+- **`python3 build.py`** renders every part into `stl/`, oriented for printing and dropped onto the bed, then prints a size and volume report. It takes a few seconds. Use `python3 build.py <outdir> [part ...]` to build only some parts. Add `--3mf` to write 3MF files into `3mf/` instead (smaller, and they keep millimetre units, which Bambu Studio and other slicers prefer).
 - **`python3 fitcheck.py`** checks clearances. It intersects every pair of printed parts in their assembled positions, and every hardware envelope (board, PSU, GPU, cooler, drives) against the case. It reports any overlap with its volume, and any part that has split into separate pieces.
 - **`python3 render.py [scene ...]`** writes the `preview_*.png` images (`all` renders every scene). The scenes and cameras are in `render.scad`. The case colour is `CASE_COLOUR` in `jx_case.scad` (charcoal by default), used both here and when you view a part in the OpenSCAD GUI; change it there, or pass `-D 'CASE_COLOUR="DimGray"'` to `openscad`.
 
@@ -54,9 +56,9 @@ To change the front, edit the photo-pixel boxes passed to `P()` in `front_recess
 - **Power LED window:** the square IR window takes a piece of smoked acrylic with the power LED behind it.
 - **Cartridge strip:** two cartridge doors and the mode-switch slot. These are cosmetic.
 
-## Parts to print (`stl/`)
+## Parts to print (`stl/` or `3mf/`)
 
-All parts are already oriented for printing, and none need supports except where noted below.
+Each part is in both folders: the same mesh as STL and as 3MF (smaller, with millimetre units). All parts are already oriented for printing, and none need supports except where noted below.
 
 | File | Qty | Notes |
 |---|---|---|
@@ -102,7 +104,7 @@ Both plates are 2 mm thick (the frame is 7 mm overall with the lock; it prints f
 
 ## Two-colour labels (AMS)
 
-Each labelled base and its inlay STL share the same coordinates, so they line up automatically:
+Each labelled base and its inlay share the same coordinates (in both the STL and 3MF files), so they line up automatically:
 
 1. Select both files, `base_front_left_EN.stl` and `labels_EN_inlay.stl` (or the JP pair), and drag them into Bambu Studio together.
 2. When it asks *"Load these files as a single object with multiple parts?"*, answer **Yes**.
