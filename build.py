@@ -1,7 +1,9 @@
 """Render every printable part of jx_case.scad into ./stl (one OpenSCAD run per
 part, in parallel), drop each onto the bed, and print a size / volume report.
 
-    python3 build.py [outdir] [part ...]
+    python3 build.py [--3mf] [outdir] [part ...]
+
+--3mf writes 3MF files (default outdir ./3mf) instead of STLs.
 
 Needs OpenSCAD 2025 or later on the PATH (or set OPENSCAD=/path/to/openscad).
 """
@@ -42,7 +44,9 @@ def render(name, outdir):
 
 def main():
     args = sys.argv[1:]
-    outdir = args.pop(0) if args and not args[0] in S.part_names() else "stl"
+    fmt = "3mf" if "--3mf" in args else "stl"
+    args = [a for a in args if a != "--3mf"]
+    outdir = args.pop(0) if args and not args[0] in S.part_names() else fmt
     names = args or [p for p in S.part_names() if not p.startswith("asm_")]
     os.makedirs(outdir, exist_ok=True)
     print(f"rendering {len(names)} parts into {outdir}/ ...", flush=True)
@@ -83,6 +87,10 @@ def main():
         mesh = ("closed" if S.is_closed(tris) else "OPEN") + (f", {n} shells" if n > 1 else "")
         print(f"{name:28s} {size[0]:7.1f} {size[1]:7.1f} {size[2]:7.1f}  {vol:8.2f}  {mesh}{flag}")
     print(f"total solid volume {total:.0f} cm3")
+    if fmt == "3mf":
+        for name, path in done.items():
+            S.write_3mf(path[:-4] + ".3mf", S.read_stl(path)[1], name)
+            os.unlink(path)
     if skipped:
         print(f"\nNOT WRITTEN (label font missing, see the warning above): {', '.join(skipped)}\n"
               "Install the font (IPA Gothic: `brew install --cask font-ipafont`), or set\n"
