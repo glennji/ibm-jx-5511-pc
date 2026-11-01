@@ -10,10 +10,12 @@ A dark-grey desktop box modelled on the front of an IBM JX (5511) system unit wi
 
 Print `fit_template_left` and `fit_template_right` first. They are 1.2 mm thick and take about 30 minutes each. Tape them together and lay them on your MSI board.
 
+- **Overlap the halves by 12 mm; don't butt them edge to edge.** The two pieces share a 12 mm strip at the join. Slide the right half (the one with three holes) over the left half until the overlap is 12 mm wide, so the combined template is 304.8 mm (12") long. If you butt them together, the three right-hand holes end up about 12 mm too far out, even though the hole positions themselves are correct.
+- **Flip the template over (bed side up) before laying the board on it.** As printed, it is a mirror image of the board seen from the component side. Flipped over, with the rear edge (the V-notches) away from you, the six-hole half is on the left under the expansion slots.
 - **All 9 holes should line up with the board's mounting holes.**
 - **The V-notches on the rear edge** mark the left and right edges of the I/O shield and the centre of each expansion bracket. They should line up with your board's I/O shield and slots.
 
-The hole pattern is ATX standard, so it should match. The I/O shield and slot positions are best estimates, so check them. If they are off, measure from the board's slot-side edge, then change these values at the top of `jx_case.scad` (they're also in the OpenSCAD Customizer) and rebuild:
+The hole pattern is ATX standard (checked against Figure 3 of the ATX 2.2 specification), so it should match. The case floor's standoff holes come from the same hole list (`ATX_HOLES` in `jx_case.scad`), so if the template fits, the case fits too. The I/O shield and slot positions are best estimates, so check them. If they are off, measure from the board's slot-side edge, then change these values at the top of `jx_case.scad` (they're also in the OpenSCAD Customizer) and rebuild:
 
 | Parameter | Meaning | Current |
 |---|---|---|
