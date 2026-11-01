@@ -10,10 +10,12 @@ A dark-grey desktop box modelled on the front of an IBM JX (5511) system unit wi
 
 Print `fit_template_left` and `fit_template_right` first. They are 1.2 mm thick and take about 30 minutes each. Tape them together and lay them on your MSI board.
 
+- **Overlap the halves by 12 mm; don't butt them edge to edge.** The two pieces share a 12 mm strip at the join. Slide the right half (the one with three holes) over the left half until the overlap is 12 mm wide, so the combined template is 304.8 mm (12") long. If you butt them together, the three right-hand holes end up about 12 mm too far out, even though the hole positions themselves are correct.
+- **Flip the template over (bed side up) before laying the board on it.** As printed, it is a mirror image of the board seen from the component side. Flipped over, with the rear edge (the V-notches) away from you, the six-hole half is on the left under the expansion slots.
 - **All 9 holes should line up with the board's mounting holes.**
 - **The V-notches on the rear edge** mark the left and right edges of the I/O shield and the centre of each expansion bracket. They should line up with your board's I/O shield and slots.
 
-The hole pattern is ATX standard, so it should match. The I/O shield and slot positions are best estimates, so check them. If they are off, measure from the board's slot-side edge, then change these values at the top of `jx_case.scad` (they're also in the OpenSCAD Customizer) and rebuild:
+The hole pattern is ATX standard (checked against Figure 3 of the ATX 2.2 specification), so it should match. The case floor's standoff holes come from the same hole list (`ATX_HOLES` in `jx_case.scad`), so if the template fits, the case fits too. The I/O shield and slot positions are best estimates, so check them. If they are off, measure from the board's slot-side edge, then change these values at the top of `jx_case.scad` (they're also in the OpenSCAD Customizer) and rebuild:
 
 | Parameter | Meaning | Current |
 |---|---|---|
@@ -27,7 +29,9 @@ The hole pattern is ATX standard, so it should match. The I/O shield and slot po
 
 The model is `jx_case.scad`. You need [OpenSCAD](https://openscad.org) 2025 or later (a development snapshot), which has the fast Manifold backend and `textmetrics()`, plus Python 3. The scripts use only the standard library.
 
-- **`python3 build.py`** renders every part into `stl/`, oriented for printing and dropped onto the bed, then prints a size and volume report. It takes a few seconds. Use `python3 build.py <outdir> [part ...]` to build only some parts.
+On Arch, the simplest install is the AUR package `openscad-snapshot-appimage`. It bundles its own libraries, so system updates (a new boost, for example) can't break it the way they can break a source build like `openscad-git`. Older snapshots such as the AppImage still treat `textmetrics()` as experimental; the scripts turn it on automatically, but in the GUI you need to tick it under *Edit → Preferences → Features*.
+
+- **`python3 build.py`** renders every part into `stl/`, oriented for printing and dropped onto the bed, then prints a size and volume report. It takes a few seconds. Use `python3 build.py <outdir> [part ...]` to build only some parts. Add `--3mf` to write 3MF files into `3mf/` instead (smaller, and they keep millimetre units, which Bambu Studio and other slicers prefer).
 - **`python3 fitcheck.py`** checks clearances. It intersects every pair of printed parts in their assembled positions, and every hardware envelope (board, PSU, GPU, cooler, drives) against the case. It reports any overlap with its volume, and any part that has split into separate pieces.
 - **`python3 render.py [scene ...]`** writes the `preview_*.png` images (`all` renders every scene). The scenes and cameras are in `render.scad`. The case colour is `CASE_COLOUR` in `jx_case.scad` (charcoal by default), used both here and when you view a part in the OpenSCAD GUI; change it there, or pass `-D 'CASE_COLOUR="DimGray"'` to `openscad`.
 
@@ -54,9 +58,9 @@ To change the front, edit the photo-pixel boxes passed to `P()` in `front_recess
 - **Power LED window:** the square IR window takes a piece of smoked acrylic with the power LED behind it.
 - **Cartridge strip:** two cartridge doors and the mode-switch slot. These are cosmetic.
 
-## Parts to print (`stl/`)
+## Parts to print (`stl/` or `3mf/`)
 
-All parts are already oriented for printing, and none need supports except where noted below.
+Each part is in both folders: the same mesh as STL and as 3MF (smaller, with millimetre units). All parts are already oriented for printing, and none need supports except where noted below.
 
 | File | Qty | Notes |
 |---|---|---|
@@ -102,7 +106,7 @@ Both plates are 2 mm thick (the frame is 7 mm overall with the lock; it prints f
 
 ## Two-colour labels (AMS)
 
-Each labelled base and its inlay STL share the same coordinates, so they line up automatically:
+Each labelled base and its inlay share the same coordinates (in both the STL and 3MF files), so they line up automatically:
 
 1. Select both files, `base_front_left_EN.stl` and `labels_EN_inlay.stl` (or the JP pair), and drag them into Bambu Studio together.
 2. When it asks *"Load these files as a single object with multiple parts?"*, answer **Yes**.
