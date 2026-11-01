@@ -21,6 +21,7 @@ ASSEMBLIES = {"assembly": "_assembly_preview", "assembly_open": "_assembly_open_
 
 
 def multiplier(name):
+    """How many copies of a part to print, from its _xN suffix."""
     for suffix, n in (("_x9", 9), ("_x6", 6), ("_x2", 2)):
         if name.endswith(suffix):
             return n
@@ -34,6 +35,7 @@ FONT_MISSING = "not found, labels use a fallback font"
 
 
 def render(name, outdir):
+    """Render one part to STL; returns (name, path), path None if its label font is missing."""
     path = os.path.join(outdir, ASSEMBLIES.get(name, name) + ".stl")
     log, _ = S.openscad("jx_case.scad", path, {"part": name})
     if name in LABEL_PARTS and FONT_MISSING in log:
@@ -42,21 +44,8 @@ def render(name, outdir):
     return name, path
 
 
-def main():
-    args = sys.argv[1:]
-    fmt = "3mf" if "--3mf" in args else "stl"
-    args = [a for a in args if a != "--3mf"]
-    outdir = args.pop(0) if args and not args[0] in S.part_names() else fmt
-    names = args or [p for p in S.part_names() if not p.startswith("asm_")]
-    os.makedirs(outdir, exist_ok=True)
-    print(f"rendering {len(names)} parts into {outdir}/ ...", flush=True)
-    with ThreadPoolExecutor(os.cpu_count()) as ex:
-        done = dict(ex.map(lambda n: render(n, outdir), names))
-    skipped = sorted(n for n, p in done.items() if p is None)
-    done = {n: p for n, p in done.items() if p is not None}
-    names = [n for n in names if n in done]
-
-    # drop onto the bed at the origin; paired inlays move with their base
+def place_on_bed(done):
+    """Drop each part onto the bed at the origin; paired inlays move with their base."""
     offsets = {}
     for name, path in done.items():
         if name in ASSEMBLIES or name in PAIRED:
@@ -72,6 +61,9 @@ def main():
             path = done[name]
             S.write_stl(path, S.translate(S.read_stl(path)[1], offsets[base]))
 
+
+def report(names, done):
+    """Print size, volume and mesh state of each part, and the total volume."""
     total = 0.0
     print(f"{'part':28s} {'X':>7s} {'Y':>7s} {'Z':>7s}  vol(cm3)  mesh")
     for name in names:
@@ -87,6 +79,25 @@ def main():
         mesh = ("closed" if S.is_closed(tris) else "OPEN") + (f", {n} shells" if n > 1 else "")
         print(f"{name:28s} {size[0]:7.1f} {size[1]:7.1f} {size[2]:7.1f}  {vol:8.2f}  {mesh}{flag}")
     print(f"total solid volume {total:.0f} cm3")
+
+
+def main():
+    """Render, place and report the parts named on the command line (default: all)."""
+    args = sys.argv[1:]
+    fmt = "3mf" if "--3mf" in args else "stl"
+    args = [a for a in args if a != "--3mf"]
+    outdir = args.pop(0) if args and not args[0] in S.part_names() else fmt
+    names = args or [p for p in S.part_names() if not p.startswith("asm_")]
+    os.makedirs(outdir, exist_ok=True)
+    print(f"rendering {len(names)} parts into {outdir}/ ...", flush=True)
+    with ThreadPoolExecutor(os.cpu_count()) as ex:
+        done = dict(ex.map(lambda n: render(n, outdir), names))
+    skipped = sorted(n for n, p in done.items() if p is None)
+    done = {n: p for n, p in done.items() if p is not None}
+    names = [n for n in names if n in done]
+
+    place_on_bed(done)
+    report(names, done)
     if fmt == "3mf":
         for name, path in done.items():
             S.write_3mf(path[:-4] + ".3mf", S.read_stl(path)[1], name)

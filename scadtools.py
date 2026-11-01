@@ -14,7 +14,7 @@ OPENSCAD = os.environ.get("OPENSCAD", "openscad")
 _seen = set()   # warnings already printed
 
 
-@functools.cache
+@functools.lru_cache(maxsize=None)
 def build_flags():
     """textmetrics() is still experimental in older 2025/2026 snapshots (such as
     the official AppImages), so enable it there; newer builds don't know the flag."""
@@ -27,6 +27,7 @@ class Empty(Exception):
 
 
 def scad_value(v):
+    """A Python value as an OpenSCAD literal, for -D."""
     if isinstance(v, str):
         return json.dumps(v, ensure_ascii=False)
     if isinstance(v, (list, tuple)):
@@ -47,7 +48,7 @@ def openscad(src, out, defs=None, extra=()):
         cmd += ["-D", f"{k}={scad_value(v)}"]
     cmd += list(extra) + ["-o", out, src]
     try:
-        p = subprocess.run(cmd, cwd=HERE, capture_output=True, text=True)
+        p = subprocess.run(cmd, cwd=HERE, capture_output=True, text=True, check=False)
         log = p.stderr
         if p.returncode != 0:
             if "top level object is empty" in log:
@@ -55,12 +56,12 @@ def openscad(src, out, defs=None, extra=()):
             raise RuntimeError(f"openscad failed ({' '.join(cmd)}):\n{log}")
         for line in log.splitlines():
             line = line.strip()
-            if ("WARNING" in line or "ERROR" in line) and "Viewall and autocenter disabled" not in line:
-                if line not in _seen:
-                    _seen.add(line)
-                    print(f"  {line}", flush=True)
+            noisy = "WARNING" in line or "ERROR" in line
+            if noisy and "Viewall and autocenter disabled" not in line and line not in _seen:
+                _seen.add(line)
+                print(f"  {line}", flush=True)
         try:
-            with open(summary_path) as fh:
+            with open(summary_path, encoding="utf-8") as fh:
                 summary = json.load(fh)
         except (OSError, ValueError):
             summary = {}
@@ -86,6 +87,7 @@ def read_stl(path):
 
 
 def write_stl(path, tris, header=b"JX-style ATX case"):
+    """Binary STL, with facet normals computed from the winding."""
     out = bytearray(header.ljust(80, b" ")[:80])
     out += struct.pack("<I", len(tris))
     for a, b, c in tris:
@@ -141,6 +143,7 @@ def write_3mf(path, tris, name="part"):
 
 
 def bbox(tris):
+    """-> (xmin, ymin, zmin, xmax, ymax, zmax)"""
     xs = [p[0] for t in tris for p in t]
     ys = [p[1] for t in tris for p in t]
     zs = [p[2] for t in tris for p in t]
@@ -157,6 +160,7 @@ def volume(tris):
 
 
 def translate(tris, off):
+    """triangles moved by off = (dx, dy, dz)"""
     dx, dy, dz = off
     return [tuple((p[0] + dx, p[1] + dy, p[2] + dz) for p in t) for t in tris]
 

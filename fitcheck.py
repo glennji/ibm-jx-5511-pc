@@ -26,20 +26,23 @@ def overlap(a, b, tmp):
 
 
 def shells(name, tmp):
+    """number of separate shells in one part"""
     out = os.path.join(tmp, f"solid_{name}.stl")
     S.openscad("fitcheck.scad", out, {"fit_a": name, "fit_b": ""})
     return S.components(S.read_stl(out)[1])
 
 
 def main():
+    """Run every overlap check and print the results."""
     with tempfile.TemporaryDirectory() as tmp:
         echo = os.path.join(tmp, "info.echo")
         S.openscad("fitcheck.scad", echo, {"fit_a": "info"})
-        info = open(echo, encoding="utf-8").read()
+        with open(echo, encoding="utf-8") as fh:
+            info = fh.read()
         names = re.findall(r'"([^"]*)"', re.search(r"fit_solids = \[(.*?)\]", info).group(1))
         envs = re.findall(r'"([^"]*)"', re.search(r"envelopes = \[(.*?)\]", info).group(1))
 
-        jobs = [(a, b) for a, b in itertools.combinations(names, 2)]
+        jobs = list(itertools.combinations(names, 2))
         jobs += [("parts", e) for e in envs]
         jobs.append(("floppy in A (147 deep)", "PSU 150 deep"))
         with ThreadPoolExecutor(os.cpu_count()) as ex:
